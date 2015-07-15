@@ -1,10 +1,16 @@
 package com.mixtile.loftqgpio;
 
+import android.util.Log;
+
+import java.util.HashMap;
+
 /**
  * Created by kurain on 7/9/15.
  */
-public class GPIOLoftq extends GPIOCommon {
-    static String[] gpios_j4 = {
+public class GPIOLoftq extends GPIOCommonSocket {
+        private static HashMap<String, Integer> gpio_map_map = null;
+        private static final String TAG="GPIOLoftq";
+        static String[] gpios_j4 = {
             "PE04", //CSI-D0
             "PE05", //CSI-D1
             "PE06", //CSI-D2
@@ -70,9 +76,9 @@ public class GPIOLoftq extends GPIOCommon {
             "LRADC0", //LRADC0
             "GND", //EARGND2
             "LRADC1", //LRADC1
-    };
+        };
 
-    static String[] gpios_j5 = {
+        static String[] gpios_j5 = {
             "VCC5V", //VCC-5V
             "VCC5V", //VCC-5V
             "GND", //GND
@@ -137,8 +143,8 @@ public class GPIOLoftq extends GPIOCommon {
             "GND",
             "UDP0", //USB-DP0
             "UDM0", //USB-DM0
-    };
-    static String[] gpios_j6 = {
+        };
+        static String[] gpios_j6 = {
             "PD00", //LCD0-D0
             "PD01", //LCD0-D1
             "GND", //GND
@@ -204,10 +210,7 @@ public class GPIOLoftq extends GPIOCommon {
             "GND", //GND
             "VCC5V", //VCC-5V
             "vCC5V", //VCC-5V
-    };
-
-        public void GPIOCommom(){
-        }
+        };
 
         private String get_name(String zone, int idx){
                 if(idx < 0 || idx >= 60){
@@ -215,11 +218,11 @@ public class GPIOLoftq extends GPIOCommon {
                 }
 
                 String lowstr = zone.toLowerCase();
-                if(lowstr == "j4"){
+                if(lowstr.equals("j4")){
                         return gpios_j4[idx];
-                }else if(lowstr == "j5"){
+                }else if(lowstr.equals("j5")){
                         return gpios_j5[idx];
-                }else if(lowstr == "j6"){
+                }else if(lowstr.equals("j6")){
                         return gpios_j6[idx];
                 }else{
                         return "Unknown";
@@ -229,7 +232,7 @@ public class GPIOLoftq extends GPIOCommon {
         private int get_gpio_id(String zone, int idx){
                 String gpio_name = get_name(zone, idx).toLowerCase();
                 if('p' == gpio_name.charAt(0)) {
-                        return gpio_map(gpio_name);
+                        return gpio_map_a31(gpio_name);
                 }else{
                         return -1;
                 }
@@ -242,27 +245,59 @@ public class GPIOLoftq extends GPIOCommon {
                 return io_zone*32 + io_num;
         }
 
+        public int gpio_map_a31(String gpio){
+            if (null == gpio_map_map) {
+                gpio_map_map = new HashMap<String, Integer>();
+                gpio_map_map.put("A", 0);
+                gpio_map_map.put("B", 30);
+                gpio_map_map.put("C", 40);
+                gpio_map_map.put("D", 70);
+                gpio_map_map.put("E", 100);
+                gpio_map_map.put("F", 119);
+                gpio_map_map.put("G", 127);
+                gpio_map_map.put("H", 148);
+                gpio_map_map.put("L", 181);
+                gpio_map_map.put("M", 192);
+            }
+
+            String zone_string = gpio.substring(1,2).toUpperCase();
+            Log.e(TAG, "gpio zone: " + zone_string);
+            if(gpio_map_map.containsKey(zone_string)){
+                Log.e(TAG, "gpio zone base : " + gpio_map_map.get(zone_string).intValue());
+                int id = gpio_map_map.get(zone_string).intValue() + Integer.parseInt(gpio.substring(2));
+                Log.e(TAG, "gpio id: " + id);
+                return id;
+            }
+
+            return -1;
+        }
+
         public String getDesc(String zone, int idx){
                 return get_name(zone, idx);
         }
 
         public int export(String zone, int idx){
+                Log.i(TAG, "export gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0) {
+                        Log.e(TAG, "export gpio " + zone + ":" + String.valueOf(idx) + ", io can't be used");
                         return -1;
                 }
                 return export(gpio_id);
         }
 
         public int unexport(String zone, int idx){
+                Log.i(TAG, "unexport gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0) {
+                        Log.e(TAG, "unexport gpio " + zone + ":" + String.valueOf(idx) + ", io can't be used");
                         return -1;
                 }
                 return unexport(gpio_id);
         }
 
         public int enable_out(String zone, int idx){
+                Log.i(TAG, "enable out gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0) {
                         return -1;
@@ -271,6 +306,7 @@ public class GPIOLoftq extends GPIOCommon {
         }
 
         public int enable_in(String zone, int idx){
+                Log.i(TAG, "enable in gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0) {
                         return -1;
@@ -279,6 +315,7 @@ public class GPIOLoftq extends GPIOCommon {
         }
 
         public int read(String zone, int idx){
+                Log.i(TAG, "read gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0)
                 {
@@ -288,6 +325,7 @@ public class GPIOLoftq extends GPIOCommon {
         }
 
         public int write(String zone, int idx, int value){
+                Log.i(TAG, "write gpio " + zone + ":" + String.valueOf(idx));
                 int gpio_id = get_gpio_id(zone, idx);
                 if(gpio_id < 0)
                 {
